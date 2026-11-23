@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cream: #F8F5EC;
+  --forest: #234B38;
+  --forest-light: #2D6349;
+  --mustard: #E5B94F;
+  --tomato: #D9654D;
+  --soft-orange: #E99B63;
+  --dark-text: #252820;
+  --muted-text: #77786F;
+  --white: #FFFFFF;
+}
+
+@layer base {
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--cream);
+    color: var(--dark-text);
+    line-height: 1.6;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Playfair Display', Georgia, serif;
+    line-height: 1.2;
+  }
+  .font-display { font-family: 'Playfair Display', Georgia, serif; }
+  .tabular-nums { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+  
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--cream); }
+  ::-webkit-scrollbar-thumb { background: #c8c5b8; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--forest); }
+  
+  *:focus-visible {
+    outline: 2px solid var(--forest);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+}
+
+@layer components {
+  .skeleton {
+    background: linear-gradient(90deg, #ede9dc 25%, #e4e0d3 50%, #ede9dc 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+    border-radius: 8px;
+  }
+  
+  .card-hover {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .card-hover:hover {
+    box-shadow: 0 4px 12px rgba(37,40,32,0.1), 0 8px 24px rgba(37,40,32,0.06);
+    transform: translateY(-1px);
+  }
+
+  .amount-positive { color: #234B38; }
+  .amount-negative { color: #D9654D; }
+  
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    color: rgba(248,245,236,0.7);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .nav-item:hover {
+    background: rgba(248,245,236,0.1);
+    color: #F8F5EC;
+  }
+  .nav-item.active {
+    background: rgba(229,185,79,0.15);
+    color: #E5B94F;
+    border-left: 3px solid #E5B94F;
+    padding-left: 13px;
+  }
+  .nav-item.active svg { color: #E5B94F; }
+}

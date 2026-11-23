@@ -1,0 +1,1 @@
+-- Seed file (default categories are inserted via migration)
