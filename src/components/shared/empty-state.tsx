@@ -9,9 +9,14 @@ interface EmptyStateProps {
     label: string
     onClick: () => void
   }
+  actionLabel?: string
+  onAction?: () => void
 }
 
-export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
+export function EmptyState({ icon: Icon, title, description, action, actionLabel, onAction }: EmptyStateProps) {
+  const effectiveLabel = action?.label || actionLabel
+  const effectiveOnClick = action?.onClick || onAction
+
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
       {Icon && (
@@ -21,9 +26,9 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
       )}
       <h4 className="font-display text-lg font-bold text-darkText mb-1">{title}</h4>
       {description && <p className="text-sm text-mutedText max-w-sm mb-5">{description}</p>}
-      {action && (
-        <Button onClick={action.onClick} variant="primary" size="md">
-          {action.label}
+      {effectiveLabel && effectiveOnClick && (
+        <Button onClick={effectiveOnClick} variant="primary" size="md">
+          {effectiveLabel}
         </Button>
       )}
     </div>

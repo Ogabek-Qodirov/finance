@@ -3,19 +3,19 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
-  ArrowDownCircle,
-  ArrowUpCircle,
+  Wallet,
+  CheckSquare,
   BarChart3,
-  Settings,
+  KeyRound,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const MOBILE_NAV = [
   { href: '/dashboard', icon: LayoutDashboard, label: "Ko'rinish" },
-  { href: '/dashboard/xarajatlar', icon: ArrowDownCircle, label: 'Xarajat' },
-  { href: '/dashboard/daromadlar', icon: ArrowUpCircle, label: 'Daromad' },
+  { href: '/dashboard/hamyon', icon: Wallet, label: 'Hamyon' },
+  { href: '/dashboard/vazifalar', icon: CheckSquare, label: 'Vazifalar' },
   { href: '/dashboard/statistika', icon: BarChart3, label: 'Statistika' },
-  { href: '/dashboard/sozlamalar', icon: Settings, label: 'Sozlama' },
+  { href: '/dashboard/parollar', icon: KeyRound, label: 'Parollar' },
 ]
 
 export function MobileNav() {

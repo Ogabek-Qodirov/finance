@@ -6,9 +6,13 @@ import {
   LayoutDashboard,
   ArrowDownCircle,
   ArrowUpCircle,
+  Wallet,
   BarChart3,
   Target,
   Tag,
+  CheckSquare,
+  FileText,
+  KeyRound,
   Settings,
   LogOut,
   X,
@@ -17,14 +21,33 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
-const NAV_ITEMS = [
-  { href: '/dashboard', icon: LayoutDashboard, label: "Umumiy ko'rinish" },
-  { href: '/dashboard/xarajatlar', icon: ArrowDownCircle, label: 'Xarajatlar' },
-  { href: '/dashboard/daromadlar', icon: ArrowUpCircle, label: 'Daromadlar' },
-  { href: '/dashboard/statistika', icon: BarChart3, label: 'Statistika' },
-  { href: '/dashboard/budjet', icon: Target, label: 'Budjet' },
-  { href: '/dashboard/kategoriyalar', icon: Tag, label: 'Kategoriyalar' },
-  { href: '/dashboard/sozlamalar', icon: Settings, label: 'Sozlamalar' },
+const NAV_GROUPS = [
+  {
+    title: 'Moliyaviy boshqaruv',
+    items: [
+      { href: '/dashboard', icon: LayoutDashboard, label: "Umumiy ko'rinish" },
+      { href: '/dashboard/xarajatlar', icon: ArrowDownCircle, label: 'Xarajatlar' },
+      { href: '/dashboard/daromadlar', icon: ArrowUpCircle, label: 'Daromadlar' },
+      { href: '/dashboard/hamyon', icon: Wallet, label: 'Hamyonlarim' },
+      { href: '/dashboard/statistika', icon: BarChart3, label: 'Statistika' },
+      { href: '/dashboard/budjet', icon: Target, label: 'Budjet' },
+      { href: '/dashboard/kategoriyalar', icon: Tag, label: 'Kategoriyalar' },
+    ],
+  },
+  {
+    title: 'Shaxsiy boshqaruv',
+    items: [
+      { href: '/dashboard/vazifalar', icon: CheckSquare, label: 'Vazifalarim' },
+      { href: '/dashboard/qaydlar', icon: FileText, label: 'Qaydlarim' },
+      { href: '/dashboard/parollar', icon: KeyRound, label: 'Parollarim' },
+    ],
+  },
+  {
+    title: 'Tizim',
+    items: [
+      { href: '/dashboard/sozlamalar', icon: Settings, label: 'Sozlamalar' },
+    ],
+  },
 ]
 
 interface SidebarProps {
@@ -105,7 +128,7 @@ export function Sidebar({
                 Moliya
               </span>
               <span className="text-cream/40 text-[10px] font-semibold tracking-wider uppercase mt-1 block">
-                Shaxsiy moliya
+                Shaxsiy boshqaruv
               </span>
             </div>
           </Link>
@@ -130,35 +153,42 @@ export function Sidebar({
           </button>
         </div>
 
-        {/* Navigatsiya menyusi */}
-        <nav className="flex-1 p-3.5 space-y-1.5 overflow-y-auto">
-          {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
-            const isActive =
-              pathname === href ||
-              (href !== '/dashboard' && pathname.startsWith(href))
+        {/* Guruhlangan Navigatsiya menyusi */}
+        <nav className="flex-1 p-3.5 space-y-5 overflow-y-auto custom-scrollbar">
+          {NAV_GROUPS.map((group, groupIdx) => (
+            <div key={groupIdx} className="space-y-1">
+              <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-cream/40 font-mono">
+                {group.title}
+              </div>
+              {group.items.map(({ href, icon: Icon, label }) => {
+                const isActive =
+                  pathname === href ||
+                  (href !== '/dashboard' && pathname.startsWith(href))
 
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={onCloseMobile}
-                className={cn(
-                  'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
-                  isActive
-                    ? 'bg-mustard/20 text-mustard border-l-[3px] border-mustard pl-3 font-semibold'
-                    : 'text-cream/70 hover:text-cream hover:bg-cream/10'
-                )}
-              >
-                <Icon
-                  className={cn(
-                    'h-4 w-4 flex-shrink-0',
-                    isActive ? 'text-mustard' : 'text-cream/50'
-                  )}
-                />
-                <span>{label}</span>
-              </Link>
-            )
-          })}
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={onCloseMobile}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-150',
+                      isActive
+                        ? 'bg-mustard/20 text-mustard border-l-[3px] border-mustard pl-2.5 font-semibold'
+                        : 'text-cream/75 hover:text-cream hover:bg-cream/10'
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        'h-4 w-4 flex-shrink-0',
+                        isActive ? 'text-mustard' : 'text-cream/50'
+                      )}
+                    />
+                    <span>{label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          ))}
         </nav>
 
         {/* Foydalanuvchi profili va Tizimdan chiqish */}

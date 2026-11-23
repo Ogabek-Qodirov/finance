@@ -6,7 +6,7 @@ export async function getTransactions(userId: string, filters?: TransactionFilte
   const supabase = createClient()
   let query = supabase
     .from('transactions')
-    .select(`*, category:categories(id, name, color, icon)`)
+    .select(`*, category:categories(id, name, color, icon), account:accounts(id, name, account_type)`)
     .eq('user_id', userId)
 
   if (filters?.type && filters.type !== 'all') {
@@ -14,6 +14,9 @@ export async function getTransactions(userId: string, filters?: TransactionFilte
   }
   if (filters?.categoryId) {
     query = query.eq('category_id', filters.categoryId)
+  }
+  if (filters?.accountId) {
+    query = query.eq('account_id', filters.accountId)
   }
   if (filters?.dateFrom) {
     query = query.gte('transaction_date', filters.dateFrom)
@@ -56,7 +59,7 @@ export async function getRecentTransactions(userId: string, limit = 10): Promise
   const supabase = createClient()
   const { data, error } = await supabase
     .from('transactions')
-    .select(`*, category:categories(id, name, color, icon)`)
+    .select(`*, category:categories(id, name, color, icon), account:accounts(id, name, account_type)`)
     .eq('user_id', userId)
     .order('transaction_date', { ascending: false })
     .order('created_at', { ascending: false })
@@ -75,7 +78,7 @@ export async function getMonthlyStats(userId: string, month: number, year: numbe
 
   const { data, error } = await supabase
     .from('transactions')
-    .select('type, amount, transaction_date')
+    .select('type, amount, transaction_date, account:accounts(account_type)')
     .eq('user_id', userId)
     .gte('transaction_date', start)
     .lte('transaction_date', end)
@@ -88,15 +91,25 @@ export async function getMonthlyStats(userId: string, month: number, year: numbe
       netBalance: 0,
       transactionCount: 0,
       avgDailyExpenses: 0,
+      cardExpenses: 0,
+      cashExpenses: 0,
     }
   }
 
-  const transactions = data || []
+  const transactions = (data || []) as any[]
   const totalExpenses = transactions
     .filter((t) => t.type === 'expense')
     .reduce((s, t) => s + Number(t.amount || 0), 0)
   const totalIncome = transactions
     .filter((t) => t.type === 'income')
+    .reduce((s, t) => s + Number(t.amount || 0), 0)
+
+  const cardExpenses = transactions
+    .filter((t) => t.type === 'expense' && t.account?.account_type === 'bank')
+    .reduce((s, t) => s + Number(t.amount || 0), 0)
+
+  const cashExpenses = transactions
+    .filter((t) => t.type === 'expense' && t.account?.account_type === 'cash')
     .reduce((s, t) => s + Number(t.amount || 0), 0)
 
   const distinctExpenseDays = new Set(
@@ -109,6 +122,8 @@ export async function getMonthlyStats(userId: string, month: number, year: numbe
     netBalance: totalIncome - totalExpenses,
     transactionCount: transactions.length,
     avgDailyExpenses: distinctExpenseDays > 0 ? Math.round(totalExpenses / distinctExpenseDays) : 0,
+    cardExpenses,
+    cashExpenses,
   }
 }
 
@@ -118,7 +133,7 @@ export async function getCategoryStats(userId: string, month: number, year: numb
 
   const { data, error } = await supabase
     .from('transactions')
-    .select(`amount, type, category:categories(id, name, color, icon)`)
+    .select(`amount, type, category:categories(id, name, color, icon), account:accounts(account_type)`)
     .eq('user_id', userId)
     .eq('type', 'expense')
     .gte('transaction_date', start)
@@ -130,27 +145,41 @@ export async function getCategoryStats(userId: string, month: number, year: numb
     return []
   }
 
-  const categoryMap = new Map<string, { category: any; total: number; count: number }>()
+  const categoryMap = new Map<string, { category: any; total: number; count: number; cardAmount: number; cashAmount: number }>()
 
-  for (const t of data || []) {
-    const cat = t.category as any
+  for (const t of (data || []) as any[]) {
+    const cat = t.category
     if (!cat) continue
+    const amt = Number(t.amount || 0)
+    const isCard = t.account?.account_type === 'bank'
+    const isCash = t.account?.account_type === 'cash'
+
     const existing = categoryMap.get(cat.id)
     if (existing) {
-      existing.total += Number(t.amount || 0)
+      existing.total += amt
       existing.count += 1
+      if (isCard) existing.cardAmount += amt
+      if (isCash) existing.cashAmount += amt
     } else {
-      categoryMap.set(cat.id, { category: cat, total: Number(t.amount || 0), count: 1 })
+      categoryMap.set(cat.id, {
+        category: cat,
+        total: amt,
+        count: 1,
+        cardAmount: isCard ? amt : 0,
+        cashAmount: isCash ? amt : 0,
+      })
     }
   }
 
   const totalExpenses = Array.from(categoryMap.values()).reduce((s, c) => s + c.total, 0)
 
   return Array.from(categoryMap.values())
-    .map(({ category, total, count }) => ({
+    .map(({ category, total, count, cardAmount, cashAmount }) => ({
       category,
       total,
       count,
+      cardAmount,
+      cashAmount,
       percentage: totalExpenses > 0 ? Math.round((total / totalExpenses) * 100) : 0,
     }))
     .sort((a, b) => b.total - a.total)
@@ -178,7 +207,6 @@ export async function getDailyExpenses(userId: string, month: number, year: numb
   }
 
   for (const t of data || []) {
-    // extract day number from YYYY-MM-DD
     const parts = t.transaction_date.split('-')
     const day = parseInt(parts[2], 10)
     const entry = dailyMap.get(day)

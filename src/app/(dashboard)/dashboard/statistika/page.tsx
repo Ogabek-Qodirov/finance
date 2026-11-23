@@ -7,6 +7,8 @@ import {
   ArrowDownRight,
   Calendar,
   Layers,
+  CreditCard,
+  Banknote,
 } from 'lucide-react'
 import {
   AreaChart,
@@ -129,6 +131,17 @@ export default function StatistikaPage() {
   const prevMonth = month === 1 ? 12 : month - 1
   const prevYear = month === 1 ? year - 1 : year
 
+  const totalExpense = stats?.totalExpenses || 0
+  const cardExpense = stats?.cardExpenses || 0
+  const cashExpense = stats?.cashExpenses || 0
+  const cardPct = totalExpense > 0 ? Math.round((cardExpense / totalExpense) * 100) : 0
+  const cashPct = totalExpense > 0 ? Math.round((cashExpense / totalExpense) * 100) : 0
+
+  const paymentSourceData = [
+    { name: 'Bank kartasi', value: cardExpense, color: '#234B38', percentage: cardPct },
+    { name: 'Naqd pul', value: cashExpense, color: '#E5B94F', percentage: cashPct },
+  ].filter((d) => d.value > 0)
+
   const overviewCards = stats
     ? [
         {
@@ -152,7 +165,7 @@ export default function StatistikaPage() {
         {
           label: "O'rtacha kunlik xarajat",
           value: formatCurrency(stats.avgDailyExpenses),
-          sub: 'Faol xarajat kunlari bo\'yicha',
+          sub: "Faol xarajat kunlari bo'yicha",
           color: 'text-darkText',
         },
         {
@@ -162,7 +175,7 @@ export default function StatistikaPage() {
           color: 'text-darkText',
         },
         {
-          label: "Eng yirik xarajat sohasi",
+          label: 'Eng yirik xarajat sohasi',
           value: categoryData[0]?.category.name || '—',
           sub: categoryData[0] ? formatCurrency(categoryData[0].total) : "Ma'lumot yo'q",
           color: 'text-darkText',
@@ -208,13 +221,112 @@ export default function StatistikaPage() {
             ))}
       </div>
 
+      {/* 2. TO'LOV MANBASI BO'YICHA STATISTIKA (Karta vs Naqd pul) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">To&apos;lov manbasi bo&apos;yicha xarajatlar</CardTitle>
+          <p className="text-xs text-mutedText">
+            Kartadan va naqd puldan sarflangan mablag&apos;lar tahlili
+          </p>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="h-40 skeleton rounded-2xl" />
+          ) : totalExpense === 0 ? (
+            <EmptyState
+              title="Xarajatlar mavjud emas"
+              description="Bu oyda hali to'lovlar amalga oshirilmagan"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+              {/* Donut chart */}
+              <div className="h-48 flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={paymentSourceData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={75}
+                      paddingAngle={4}
+                    >
+                      {paymentSourceData.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} stroke="#FFFFFF" strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(v: number) => [formatCurrency(v), 'Xarajat']}
+                      contentStyle={{
+                        background: '#252820',
+                        border: 'none',
+                        borderRadius: 16,
+                        color: '#F8F5EC',
+                        fontSize: 12,
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Tafsilotlar: Karta & Naqd */}
+              <div className="md:col-span-2 space-y-4">
+                {/* Bank kartasi */}
+                <div className="p-4 rounded-2xl bg-forest/5 border border-forest/15 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-forest/15 flex items-center justify-center text-forest">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-mutedText uppercase tracking-wider">
+                        Bank kartasi orqali
+                      </div>
+                      <div className="font-display text-xl font-bold text-darkText tabular-nums mt-0.5">
+                        {formatCurrency(cardExpense)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-forest">{cardPct}%</span>
+                    <div className="text-[11px] text-mutedText">ulushi</div>
+                  </div>
+                </div>
+
+                {/* Naqd pul */}
+                <div className="p-4 rounded-2xl bg-mustard/10 border border-mustard/20 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-mustard/25 flex items-center justify-center text-mustard-dark">
+                      <Banknote className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-mutedText uppercase tracking-wider">
+                        Naqd pul orqali
+                      </div>
+                      <div className="font-display text-xl font-bold text-darkText tabular-nums mt-0.5">
+                        {formatCurrency(cashExpense)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-mustard-dark">{cashPct}%</span>
+                    <div className="text-[11px] text-mutedText">ulushi</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* 2 ustunli grafiklar bloki */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Kunlik moliyaviy dinamika (Daromad va Xarajatlar) */}
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">Moliyaviy dinamika</CardTitle>
-            <p className="text-xs text-mutedText">Oy davomida daromad va xarajatlar to'lqini</p>
+            <p className="text-xs text-mutedText">Oy davomida daromad va xarajatlar to&apos;lqini</p>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -304,7 +416,7 @@ export default function StatistikaPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">Kategoriyalar doiraviy grafigi</CardTitle>
-            <p className="text-xs text-mutedText">Xarajatlarning sohalar bo'yicha ulushi</p>
+            <p className="text-xs text-mutedText">Xarajatlarning sohalar bo&apos;yicha ulushi</p>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -371,7 +483,7 @@ export default function StatistikaPage() {
           <CardHeader>
             <CardTitle className="text-xl">Oylik solishtirma hisobot</CardTitle>
             <p className="text-xs text-mutedText">
-              {getMonthName(month)} {year} va {getMonthName(prevMonth)} {prevYear} o'rtasidagi farq
+              {getMonthName(month)} {year} va {getMonthName(prevMonth)} {prevYear} o&apos;rtasidagi farq
             </p>
           </CardHeader>
           <CardContent>
@@ -379,7 +491,7 @@ export default function StatistikaPage() {
               {/* Xarajat taqqoslash */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold text-darkText">Xarajatlar o'zgarishi</span>
+                  <span className="text-sm font-semibold text-darkText">Xarajatlar o&apos;zgarishi</span>
                   <div
                     className={cn(
                       'flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full',
@@ -393,7 +505,7 @@ export default function StatistikaPage() {
                     ) : (
                       <ArrowDownRight className="h-3.5 w-3.5" />
                     )}
-                    {Math.abs(comparison.expenseChange)}% {comparison.expenseChange <= 0 ? "tejaldi" : "oshdi"}
+                    {Math.abs(comparison.expenseChange)}% {comparison.expenseChange <= 0 ? 'tejaldi' : 'oshdi'}
                   </div>
                 </div>
 
@@ -422,7 +534,7 @@ export default function StatistikaPage() {
 
                   <div>
                     <div className="flex justify-between text-xs text-mutedText mb-1">
-                      <span>{getMonthName(prevMonth)} (O'tgan oy)</span>
+                      <span>{getMonthName(prevMonth)} (O&apos;tgan oy)</span>
                       <span className="font-semibold text-darkText">
                         {formatCurrency(comparison.previousExpenses)}
                       </span>
@@ -447,7 +559,7 @@ export default function StatistikaPage() {
               {/* Daromad taqqoslash */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold text-darkText">Daromadlar o'zgarishi</span>
+                  <span className="text-sm font-semibold text-darkText">Daromadlar o&apos;zgarishi</span>
                   <div
                     className={cn(
                       'flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full',
@@ -461,7 +573,7 @@ export default function StatistikaPage() {
                     ) : (
                       <ArrowDownRight className="h-3.5 w-3.5" />
                     )}
-                    {Math.abs(comparison.incomeChange)}% {comparison.incomeChange >= 0 ? "o'sdi" : "kamaydi"}
+                    {Math.abs(comparison.incomeChange)}% {comparison.incomeChange >= 0 ? "o'sdi" : 'kamaydi'}
                   </div>
                 </div>
 
@@ -490,7 +602,7 @@ export default function StatistikaPage() {
 
                   <div>
                     <div className="flex justify-between text-xs text-mutedText mb-1">
-                      <span>{getMonthName(prevMonth)} (O'tgan oy)</span>
+                      <span>{getMonthName(prevMonth)} (O&apos;tgan oy)</span>
                       <span className="font-semibold text-darkText">
                         {formatCurrency(comparison.previousIncome)}
                       </span>
@@ -519,7 +631,10 @@ export default function StatistikaPage() {
       {/* Kategoriya bo'yicha batafsil jadval */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Kategoriyalar bo'yicha batafsil hisobot</CardTitle>
+          <CardTitle className="text-xl">Kategoriyalar bo&apos;yicha batafsil hisobot</CardTitle>
+          <p className="text-xs text-mutedText">
+            Har bir soha bo&apos;yicha xarajatlar va ularning to&apos;lov manbasi (Karta / Naqd pul)
+          </p>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
@@ -534,17 +649,19 @@ export default function StatistikaPage() {
             <EmptyState title="Kategoriya xarajatlari yo'q" />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[450px]">
+              <table className="w-full min-w-[600px]">
                 <thead>
                   <tr className="border-b border-darkText/5 text-mutedText text-xs font-semibold uppercase tracking-wider">
                     <th className="text-left px-6 py-4">Kategoriya</th>
                     <th className="text-right px-6 py-4">Jami summa</th>
+                    <th className="text-right px-6 py-4">Karta orqali</th>
+                    <th className="text-right px-6 py-4">Naqd pulda</th>
                     <th className="text-right px-6 py-4">Amallar soni</th>
                     <th className="text-right px-6 py-4">Umumiy ulush</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-darkText/5">
-                  {categoryData.map(({ category, total, count, percentage }) => (
+                  {categoryData.map(({ category, total, count, percentage, cardAmount, cashAmount }) => (
                     <tr key={category.id} className="hover:bg-cream/40 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2.5">
@@ -559,6 +676,12 @@ export default function StatistikaPage() {
                       </td>
                       <td className="px-6 py-4 text-right text-sm font-bold tabular-nums text-darkText">
                         {formatCurrency(total)}
+                      </td>
+                      <td className="px-6 py-4 text-right text-xs font-medium tabular-nums text-forest">
+                        {formatCurrency(cardAmount || 0)}
+                      </td>
+                      <td className="px-6 py-4 text-right text-xs font-medium tabular-nums text-mustard-dark">
+                        {formatCurrency(cashAmount || 0)}
                       </td>
                       <td className="px-6 py-4 text-right text-sm text-mutedText">
                         {count} ta

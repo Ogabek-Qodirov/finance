@@ -12,6 +12,9 @@ import {
   Trash2,
   ChevronRight,
   LineChart as LineChartIcon,
+  CreditCard,
+  Banknote,
+  ArrowRightLeft,
 } from 'lucide-react'
 import {
   LineChart,
@@ -31,6 +34,7 @@ import {
   getDailyExpenses,
   getRecentTransactions,
 } from '@/lib/queries/transactions'
+import { getAccountBalances } from '@/lib/queries/accounts'
 import { getBudgetStatus } from '@/lib/queries/budgets'
 import {
   formatCurrency,
@@ -45,15 +49,18 @@ import { AmountDisplay } from '@/components/shared/amount-display'
 import { MonthSelector } from '@/components/shared/month-selector'
 import { EmptyState } from '@/components/shared/empty-state'
 import { SkeletonCard, SkeletonRow } from '@/components/ui/skeleton'
+import { AnalogClock } from '@/components/shared/analog-clock'
 import { AddTransactionModal } from '@/components/transactions/add-transaction-modal'
 import { EditTransactionModal } from '@/components/transactions/edit-transaction-modal'
 import { DeleteTransactionDialog } from '@/components/transactions/delete-transaction-dialog'
+import { TransferModal } from '@/components/wallets/transfer-modal'
 import {
   Transaction,
   MonthlyStats,
   CategoryStats,
   DailyExpense,
   BudgetStatus,
+  Account,
 } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -117,6 +124,13 @@ export default function DashboardPage() {
   const [dailyData, setDailyData] = useState<DailyExpense[]>([])
   const [recentTxns, setRecentTxns] = useState<Transaction[]>([])
   const [budgetStatus, setBudgetStatus] = useState<BudgetStatus | null>(null)
+  const [balances, setBalances] = useState<{
+    cashBalance: number
+    bankBalance: number
+    totalBalance: number
+    cashAccount: Account | null
+    bankAccount: Account | null
+  } | null>(null)
   const [userId, setUserId] = useState<string>('')
   const [userName, setUserName] = useState<string>('')
 
@@ -125,6 +139,7 @@ export default function DashboardPage() {
   const [addModalType, setAddModalType] = useState<'expense' | 'income'>('expense')
   const [editTxn, setEditTxn] = useState<Transaction | null>(null)
   const [deleteTxn, setDeleteTxn] = useState<Transaction | null>(null)
+  const [transferModalOpen, setTransferModalOpen] = useState(false)
 
   const fetchData = useCallback(async (uid: string, m: number, y: number) => {
     setLoading(true)
@@ -132,13 +147,14 @@ export default function DashboardPage() {
       const prevM = m === 1 ? 12 : m - 1
       const prevY = m === 1 ? y - 1 : y
 
-      const [s, ps, cs, dd, rt, bs] = await Promise.all([
+      const [s, ps, cs, dd, rt, bs, b] = await Promise.all([
         getMonthlyStats(uid, m, y),
         getMonthlyStats(uid, prevM, prevY),
         getCategoryStats(uid, m, y),
         getDailyExpenses(uid, m, y),
         getRecentTransactions(uid, 8),
         getBudgetStatus(uid, m, y),
+        getAccountBalances(uid),
       ])
 
       setStats(s)
@@ -147,6 +163,7 @@ export default function DashboardPage() {
       setDailyData(dd)
       setRecentTxns(rt)
       setBudgetStatus(bs)
+      setBalances(b)
     } catch (e) {
       console.error('fetchData error:', e)
     }
@@ -236,7 +253,7 @@ export default function DashboardPage() {
   return (
     <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-8 animate-fadeIn">
       {/* Yuqori qism (Header) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <p className="text-mutedText text-xs sm:text-sm font-medium tracking-wide">
             {getTodayUzbekDate()}
@@ -247,6 +264,8 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
+          <AnalogClock />
+
           <Button
             variant="secondary"
             size="md"
@@ -273,7 +292,68 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 4 ta Moliyaviy umumiy kartalar */}
+      {/* 1. MOLIYAVIY HISOB (Dual Wallet Bar) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Umumiy mablag' */}
+        <div className="p-5 rounded-3xl bg-forest text-cream shadow-sm relative overflow-hidden flex items-center justify-between">
+          <div>
+            <span className="text-[11px] uppercase tracking-wider text-cream/70 font-semibold block mb-0.5">
+              Umumiy mablag&apos;
+            </span>
+            <span className="font-display text-2xl lg:text-3xl font-bold tabular-nums block">
+              {formatCurrency(balances?.totalBalance || 0)}
+            </span>
+            <span className="text-[11px] text-cream/60 mt-0.5 block">
+              Kartadagi + Naqd pul jami
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-mustard shrink-0">
+            <Wallet className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* Bank kartasi */}
+        <div className="p-5 rounded-3xl bg-white border border-darkText/10 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[11px] uppercase tracking-wider text-mutedText font-semibold block mb-0.5">
+              Kartadagi mablag&apos;
+            </span>
+            <span className="font-display text-2xl font-bold text-darkText tabular-nums block">
+              {formatCurrency(balances?.bankBalance || 0)}
+            </span>
+            <span className="text-[11px] text-mutedText/80 mt-0.5 block">
+              Bank kartasi balansi
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-forest/10 flex items-center justify-center text-forest shrink-0">
+            <CreditCard className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* Naqd pul */}
+        <div className="p-5 rounded-3xl bg-white border border-darkText/10 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[11px] uppercase tracking-wider text-mutedText font-semibold block mb-0.5">
+              Naqd pul
+            </span>
+            <span className="font-display text-2xl font-bold text-darkText tabular-nums block">
+              {formatCurrency(balances?.cashBalance || 0)}
+            </span>
+            <button
+              onClick={() => setTransferModalOpen(true)}
+              className="text-[11px] font-semibold text-forest hover:underline inline-flex items-center gap-1 mt-0.5"
+            >
+              <ArrowRightLeft className="w-3 h-3" />
+              <span>Pul o&apos;tkazish</span>
+            </button>
+          </div>
+          <div className="w-10 h-10 rounded-2xl bg-mustard/20 flex items-center justify-center text-mustard-dark shrink-0">
+            <Banknote className="w-5 h-5" />
+          </div>
+        </div>
+      </div>
+
+      {/* 4 ta Moliyaviy oylik ko'rsatkich kartalari */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {loading
           ? Array(4)
@@ -341,8 +421,8 @@ export default function DashboardPage() {
                               ? 'text-forest'
                               : 'text-tomato'
                             : change > 0
-                            ? 'text-forest'
-                            : 'text-tomato'
+                              ? 'text-forest'
+                              : 'text-tomato'
                         )}
                       >
                         {change > 0 ? (
@@ -351,7 +431,7 @@ export default function DashboardPage() {
                           <TrendingDown className="h-3.5 w-3.5" />
                         )}
                         <span>
-                          {Math.abs(change)}% o'tgan oyga nisbatan
+                          {Math.abs(change)}% o&apos;tgan oyga nisbatan
                         </span>
                       </div>
                     ) : (
@@ -383,40 +463,26 @@ export default function DashboardPage() {
 
           <CardContent>
             {loading ? (
-              <div className="h-64 flex items-end gap-1.5 pt-6">
-                {Array(20)
-                  .fill(0)
-                  .map((_, i) => (
-                    <div
-                      key={i}
-                      className="skeleton flex-1 rounded-t-lg"
-                      style={{ height: `${30 + Math.random() * 60}%` }}
-                    />
-                  ))}
+              <div className="h-72 skeleton rounded-2xl" />
+            ) : !hasTransactionsInMonth ? (
+              <div className="py-12">
+                <EmptyState
+                  icon={LineChartIcon}
+                  title="Ushbu oyda hali operatsiyalar mavjud emas"
+                  description={`${getMonthName(month)} ${year} oyi uchun ma'lumotlar kiritilmagan. Yangi amal qo'shib, oylik dinamikani ko'rishingiz mumkin.`}
+                  actionLabel="+ Yangi operatsiya qo'shish"
+                  onAction={() => {
+                    setAddModalType('expense')
+                    setAddModalOpen(true)
+                  }}
+                />
               </div>
             ) : (
-              <div className="pt-2 space-y-3">
-                {!hasTransactionsInMonth && (
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-cream/80 border border-darkText/10 text-xs">
-                    <span className="text-mutedText font-medium">
-                      {getMonthName(month)} {year} oyi uchun hali operatsiyalar kiritilmagan. Grafikda nol darajasi ko'rsatilmoqda.
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAddModalType('expense')
-                        setAddModalOpen(true)
-                      }}
-                      className="text-forest font-bold hover:underline self-start sm:self-auto"
-                    >
-                      + Yangi operatsiya qo'shish
-                    </button>
-                  </div>
-                )}
-                <ResponsiveContainer width="100%" height={260}>
+              <div className="space-y-4">
+                <ResponsiveContainer width="100%" height={290}>
                   <LineChart
                     data={dailyData}
-                    margin={{ top: 15, right: 15, left: -10, bottom: 5 }}
+                    margin={{ top: 10, right: 15, left: -20, bottom: 0 }}
                   >
                     <CartesianGrid
                       strokeDasharray="3 3"
@@ -425,7 +491,7 @@ export default function DashboardPage() {
                     />
                     <XAxis
                       dataKey="day"
-                      tick={{ fontSize: 11, fill: '#77786F' }}
+                      tick={{ fontSize: 12, fill: '#77786F' }}
                       axisLine={false}
                       tickLine={false}
                       interval={2}
@@ -436,67 +502,43 @@ export default function DashboardPage() {
                           ? `${(v / 1000000).toFixed(1)}M`
                           : v >= 1000
                           ? `${(v / 1000).toFixed(0)}K`
-                          : String(v)
+                          : `${v}`
                       }
-                      tick={{ fontSize: 10, fill: '#77786F' }}
+                      tick={{ fontSize: 11, fill: '#77786F' }}
                       axisLine={false}
                       tickLine={false}
-                      width={48}
+                      width={55}
                     />
-                    <Tooltip
-                      content={<CustomLineTooltip month={month} />}
-                      cursor={{ stroke: '#234B38', strokeWidth: 1, strokeDasharray: '4 4' }}
-                    />
+                    <Tooltip content={<CustomLineTooltip month={month} />} />
                     <Legend
                       verticalAlign="top"
                       align="right"
                       iconType="circle"
-                      wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }}
+                      iconSize={8}
+                      wrapperStyle={{ paddingBottom: 16, fontSize: 12 }}
                       formatter={(value) => (
-                        <span className="font-semibold text-darkText text-xs ml-1">
-                          {value}
+                        <span className="text-xs text-darkText font-medium ml-1 mr-4">
+                          {value === 'income' ? 'Daromad' : 'Xarajatlar'}
                         </span>
                       )}
                     />
-                    {/* Daromad chizig'i (To'q o'rmon yashili) */}
                     <Line
                       type="monotone"
                       dataKey="income"
-                      name="Daromad"
+                      name="income"
                       stroke="#234B38"
                       strokeWidth={2.5}
-                      dot={{
-                        r: 3,
-                        fill: '#234B38',
-                        stroke: '#FFFFFF',
-                        strokeWidth: 1.5,
-                      }}
-                      activeDot={{
-                        r: 6,
-                        fill: '#234B38',
-                        stroke: '#FFFFFF',
-                        strokeWidth: 2,
-                      }}
+                      dot={{ r: 3, fill: '#234B38', strokeWidth: 0 }}
+                      activeDot={{ r: 5, fill: '#234B38' }}
                     />
-                    {/* Xarajatlar chizig'i (Pomidor qizili) */}
                     <Line
                       type="monotone"
                       dataKey="expenses"
-                      name="Xarajatlar"
+                      name="expenses"
                       stroke="#D9654D"
                       strokeWidth={2.5}
-                      dot={{
-                        r: 3,
-                        fill: '#D9654D',
-                        stroke: '#FFFFFF',
-                        strokeWidth: 1.5,
-                      }}
-                      activeDot={{
-                        r: 6,
-                        fill: '#D9654D',
-                        stroke: '#FFFFFF',
-                        strokeWidth: 2,
-                      }}
+                      dot={{ r: 3, fill: '#D9654D', strokeWidth: 0 }}
+                      activeDot={{ r: 5, fill: '#D9654D' }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -507,80 +549,90 @@ export default function DashboardPage() {
 
         {/* Kategoriyalar taqsimoti */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-4">
             <CardTitle className="text-xl">Kategoriyalar ulushi</CardTitle>
-            <p className="text-xs text-mutedText">
-              Eng ko'p mablag' sarflangan yo'nalishlar
+            <p className="text-xs text-mutedText mt-0.5">
+              Eng ko&apos;p mablag&apos; sarflangan yo&apos;nalishlar
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             {loading ? (
-              Array(5)
-                .fill(0)
-                .map((_, i) => <SkeletonRow key={i} />)
+              <div className="space-y-4">
+                {Array(4)
+                  .fill(0)
+                  .map((_, i) => (
+                    <div key={i} className="space-y-1.5">
+                      <div className="h-4 skeleton rounded" />
+                      <div className="h-2 skeleton rounded-full" />
+                    </div>
+                  ))}
+              </div>
             ) : categoryStats.length === 0 ? (
-              <EmptyState
-                title="Kategoriyalar bo'sh"
-                description="Ushbu oy uchun xarajatlar kiritilmagan"
-              />
+              <div className="py-8">
+                <EmptyState
+                  title="Kategoriyalar bo'sh"
+                  description="Ushbu oy uchun xarajatlar kiritilmagan"
+                />
+              </div>
             ) : (
-              categoryStats.slice(0, 6).map(({ category, total, percentage }) => (
-                <div key={category.id} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="w-3 h-3 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: category.color }}
-                      />
-                      <span className="text-darkText font-medium truncate">
+              <div className="space-y-4">
+                {categoryStats.slice(0, 5).map(({ category, total, percentage }) => (
+                  <div key={category.id} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-darkText flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full inline-block"
+                          style={{ backgroundColor: category.color }}
+                        />
                         {category.name}
                       </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-darkText tabular-nums">
+                          {formatCurrency(total)}
+                        </span>
+                        <span className="text-mutedText w-8 text-right font-medium">
+                          {percentage}%
+                        </span>
+                      </div>
                     </div>
-                    <span className="tabular-nums font-semibold text-darkText text-xs sm:text-sm">
-                      {formatCurrency(total)}
-                    </span>
+                    <div className="w-full h-1.5 bg-cream rounded-full overflow-hidden border border-darkText/5">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${percentage}%`,
+                          backgroundColor: category.color,
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full h-1.5 bg-cream rounded-full overflow-hidden border border-darkText/5">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: `${percentage}%`,
-                        backgroundColor: category.color,
-                      }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-[11px] text-mutedText">
-                    <span>Umumiy xarajatning</span>
-                    <span className="font-medium">{percentage}% qismi</span>
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* So'nggi operatsiyalar jadvali */}
+      {/* So'nggi operatsiyalar ro'yxati */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xl">So'nggi operatsiyalar</CardTitle>
-              <p className="text-xs text-mutedText">
-                Oxirgi amalga oshirilgan pul o'tkazmalari
-              </p>
-            </div>
-            <Link href="/dashboard/xarajatlar">
-              <Button variant="ghost" size="sm" className="text-forest hover:bg-forest/5">
-                Barchasi <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </Link>
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <div>
+            <CardTitle className="text-xl">So&apos;nggi operatsiyalar</CardTitle>
+            <p className="text-xs text-mutedText mt-0.5">
+              Oxirgi amalga oshirilgan pul o&apos;tkazmalari
+            </p>
           </div>
+          <Link
+            href="/dashboard/xarajatlar"
+            className="text-xs font-semibold text-forest hover:text-forest-dark flex items-center gap-1 transition-colors"
+          >
+            <span>Barchasi</span>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
         </CardHeader>
 
         <CardContent>
           {loading ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {Array(5)
                 .fill(0)
                 .map((_, i) => (
@@ -588,81 +640,92 @@ export default function DashboardPage() {
                 ))}
             </div>
           ) : recentTxns.length === 0 ? (
-            <EmptyState
-              title="Operatsiyalar mavjud emas"
-              description="Hali hech qanday xarajat yoki daromad kiritilmagan"
-              action={{
-                label: '+ Birinchi xarajatni qo\'shish',
-                onClick: () => {
+            <div className="py-8">
+              <EmptyState
+                title="Hali operatsiyalar mavjud emas"
+                description="Yangi xarajat yoki daromad kiritib, hisobingizni yuritishni boshlang."
+                actionLabel="+ Operatsiya qo'shish"
+                onAction={() => {
                   setAddModalType('expense')
                   setAddModalOpen(true)
-                },
-              }}
-            />
+                }}
+              />
+            </div>
           ) : (
-            <div className="overflow-x-auto -mx-6">
-              <table className="w-full min-w-[550px]">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-darkText/5 text-mutedText text-xs font-semibold uppercase tracking-wider">
-                    <th className="text-left px-6 py-3.5">Sana</th>
-                    <th className="text-left px-6 py-3.5">Nomi / Izoh</th>
-                    <th className="text-left px-6 py-3.5">Kategoriya</th>
-                    <th className="text-right px-6 py-3.5">Summa</th>
-                    <th className="text-right px-6 py-3.5">Amallar</th>
+                  <tr className="border-b border-darkText/10 text-mutedText text-xs font-semibold uppercase tracking-wider text-left">
+                    <th className="pb-3 font-semibold">Sana</th>
+                    <th className="pb-3 font-semibold">Nomi / Izoh</th>
+                    <th className="pb-3 font-semibold">Kategoriya</th>
+                    <th className="pb-3 font-semibold">Manba</th>
+                    <th className="pb-3 font-semibold text-right">Summa</th>
+                    <th className="pb-3 font-semibold text-right">Amallar</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-darkText/5">
-                  {recentTxns.map((txn) => (
+                  {recentTxns.map((t) => (
                     <tr
-                      key={txn.id}
+                      key={t.id}
                       className="hover:bg-cream/40 transition-colors group"
                     >
-                      <td className="px-6 py-3.5 text-xs text-mutedText whitespace-nowrap font-medium">
-                        {formatDate(txn.transaction_date)}
+                      <td className="py-3.5 text-mutedText font-medium whitespace-nowrap">
+                        {formatDate(t.transaction_date)}
                       </td>
-                      <td className="px-6 py-3.5 text-sm font-medium text-darkText max-w-[220px] truncate">
-                        {txn.description ||
-                          (txn.type === 'expense' ? 'Xarajat' : 'Daromad')}
+                      <td className="py-3.5 font-semibold text-darkText">
+                        {t.description || (t.type === 'expense' ? 'Xarajat' : 'Daromad')}
                       </td>
-                      <td className="px-6 py-3.5">
-                        {txn.category ? (
-                          <span
-                            className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border border-darkText/5"
-                            style={{
-                              backgroundColor: txn.category.color + '15',
-                              color: txn.category.color,
-                            }}
-                          >
+                      <td className="py-3.5">
+                        {t.category ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-darkText/5">
                             <span
-                              className="w-1.5 h-1.5 rounded-full"
-                              style={{ backgroundColor: txn.category.color }}
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: t.category.color }}
                             />
-                            {txn.category.name}
+                            {t.category.name}
                           </span>
                         ) : (
-                          <span className="text-xs text-mutedText">—</span>
+                          <span className="text-mutedText text-xs">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-3.5 text-right">
-                        <AmountDisplay
-                          amount={txn.amount}
-                          type={txn.type}
-                          showSign
-                          size="sm"
-                        />
+                      <td className="py-3.5">
+                        <span className="inline-flex items-center gap-1 text-xs text-mutedText">
+                          {t.account?.account_type === 'cash' ? (
+                            <>
+                              <Banknote className="w-3.5 h-3.5 text-mustard-dark" />
+                              <span>Naqd pul</span>
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="w-3.5 h-3.5 text-forest" />
+                              <span>Karta</span>
+                            </>
+                          )}
+                        </span>
                       </td>
-                      <td className="px-6 py-3.5 text-right">
+                      <td className="py-3.5 text-right font-bold tabular-nums whitespace-nowrap">
+                        <span
+                          className={cn(
+                            t.type === 'expense' ? 'text-tomato' : 'text-forest'
+                          )}
+                        >
+                          {t.type === 'expense' ? '−' : '+'}
+                          {formatCurrency(t.amount)}
+                        </span>
+                      </td>
+                      <td className="py-3.5 text-right">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
-                            onClick={() => setEditTxn(txn)}
-                            className="p-1.5 rounded-lg hover:bg-forest/10 text-mutedText hover:text-forest transition-colors"
+                            onClick={() => setEditTxn(t)}
+                            className="p-1 rounded text-mutedText hover:text-darkText hover:bg-cream"
                             title="Tahrirlash"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
-                            onClick={() => setDeleteTxn(txn)}
-                            className="p-1.5 rounded-lg hover:bg-tomato/10 text-mutedText hover:text-tomato transition-colors"
+                            onClick={() => setDeleteTxn(t)}
+                            className="p-1 rounded text-mutedText hover:text-tomato hover:bg-tomato/10"
                             title="O'chirish"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -683,6 +746,14 @@ export default function DashboardPage() {
         open={addModalOpen}
         onOpenChange={setAddModalOpen}
         defaultType={addModalType}
+        onSuccess={() => {
+          if (userId) fetchData(userId, month, year)
+        }}
+      />
+
+      <TransferModal
+        open={transferModalOpen}
+        onOpenChange={setTransferModalOpen}
         onSuccess={() => {
           if (userId) fetchData(userId, month, year)
         }}

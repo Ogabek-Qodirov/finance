@@ -4,15 +4,16 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import * as Dialog from '@radix-ui/react-dialog'
-import { X } from 'lucide-react'
+import { X, CreditCard, Banknote } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getCategories } from '@/lib/queries/categories'
+import { getAccounts } from '@/lib/queries/accounts'
 import { createTransaction } from '@/lib/actions/transactions'
 import { toast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Category } from '@/types'
+import { Category, Account } from '@/types'
 import { cn } from '@/lib/utils'
 
 const schema = z.object({
@@ -22,6 +23,7 @@ const schema = z.object({
     .min(1, 'Summa kiritilishi shart')
     .refine((v) => Number(v) > 0, { message: "Summa 0 dan katta bo'lishi kerak" }),
   categoryId: z.string().min(1, 'Kategoriya tanlanishi shart'),
+  accountId: z.string().optional(),
   description: z.string().optional(),
   transactionDate: z.string().min(1, 'Sana kiritilishi shart'),
 })
@@ -42,6 +44,7 @@ export function AddTransactionModal({
   onSuccess,
 }: AddTransactionModalProps) {
   const [categories, setCategories] = useState<Category[]>([])
+  const [accounts, setAccounts] = useState<Account[]>([])
   const today = new Date().toISOString().split('T')[0]
 
   const {
@@ -49,6 +52,8 @@ export function AddTransactionModal({
     handleSubmit,
     control,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -56,10 +61,13 @@ export function AddTransactionModal({
       type: defaultType,
       amount: '',
       categoryId: '',
+      accountId: '',
       description: '',
       transactionDate: today,
     },
   })
+
+  const selectedAccountId = watch('accountId')
 
   useEffect(() => {
     if (!open) return
@@ -67,6 +75,7 @@ export function AddTransactionModal({
       type: defaultType,
       amount: '',
       categoryId: '',
+      accountId: '',
       description: '',
       transactionDate: today,
     })
@@ -74,15 +83,24 @@ export function AddTransactionModal({
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         getCategories(user.id).then(setCategories)
+        getAccounts(user.id).then((accs) => {
+          setAccounts(accs)
+          // Default to bank or first account
+          if (accs.length > 0) {
+            const defaultAcc = accs.find((a) => a.account_type === 'bank') || accs[0]
+            setValue('accountId', defaultAcc.id)
+          }
+        })
       }
     })
-  }, [open, defaultType])
+  }, [open, defaultType, reset, setValue, today])
 
   const onSubmit = async (data: FormData) => {
     const result = await createTransaction({
       type: data.type,
       amount: Number(data.amount),
       categoryId: data.categoryId,
+      accountId: data.accountId || undefined,
       description: data.description?.trim() || undefined,
       transactionDate: data.transactionDate,
     })
@@ -92,7 +110,7 @@ export function AddTransactionModal({
       return
     }
 
-    toast("Operatsiya muvaffaqiyatli saqlandi", 'success')
+    toast('Operatsiya muvaffaqiyatli saqlandi', 'success')
     onOpenChange(false)
     onSuccess()
   }
@@ -101,7 +119,7 @@ export function AddTransactionModal({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-darkText/40 backdrop-blur-sm z-50 animate-fadeIn" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md bg-white rounded-3xl shadow-modal animate-scaleIn max-h-[90vh] overflow-y-auto border border-darkText/5">
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md bg-white rounded-3xl border border-darkText/5 p-0 shadow-modal animate-scaleIn max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between p-6 border-b border-darkText/5">
             <Dialog.Title className="font-display text-2xl font-bold text-darkText">
               Yangi operatsiya
@@ -143,6 +161,46 @@ export function AddTransactionModal({
                 )}
               />
             </div>
+
+            {/* To'lov manbasi / Hamyon */}
+            {accounts.length > 0 && (
+              <div>
+                <label className="text-sm font-medium text-darkText mb-2 block">
+                  To&apos;lov manbasi
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {accounts.map((acc) => {
+                    const isSelected = selectedAccountId === acc.id
+                    const isBank = acc.account_type === 'bank'
+                    return (
+                      <button
+                        key={acc.id}
+                        type="button"
+                        onClick={() => setValue('accountId', acc.id)}
+                        className={cn(
+                          'flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all',
+                          isSelected
+                            ? 'border-forest bg-forest/5 text-forest font-semibold shadow-sm ring-1 ring-forest'
+                            : 'border-darkText/15 bg-white text-mutedText hover:border-darkText/30 hover:text-darkText'
+                        )}
+                      >
+                        {isBank ? (
+                          <CreditCard className={cn('h-5 w-5', isSelected ? 'text-forest' : 'text-mutedText')} />
+                        ) : (
+                          <Banknote className={cn('h-5 w-5', isSelected ? 'text-forest' : 'text-mutedText')} />
+                        )}
+                        <div className="truncate">
+                          <div className="text-xs leading-none mb-1 font-medium">{acc.name}</div>
+                          <div className="text-[11px] opacity-75">
+                            {Number(acc.balance).toLocaleString('uz-UZ')} so&apos;m
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Summa */}
             <Input
