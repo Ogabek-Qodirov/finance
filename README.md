@@ -1,57 +1,202 @@
-# Moliya — Shaxsiy Moliya Boshqaruvi (O'zbekiston)
+# DESIGN REDIRECTION — HEYDAY CANNING CO.
 
-Heyday Canning Co. vizual uslubidan ilhomlangan zamonaviy, to'liq funksional, retro-modern shaxsiy moliya boshqaruvi veb-ilovasi.
+## Primary Design Reference
 
-## Asosiy Imkoniyatlar
+Website: Heyday Canning Co.
 
-- **Umumiy ko'rinish (Dashboard):** Jami xarajatlar, jami daromadlar, qolgan sof mablag', oylik budjet va kundalik xarajatlar grafigi.
-- **Xarajatlar va Daromadlar CRUD:** Operatsiyalarni qo'shish, o'chirish, tahrirlash (Edit), qidiruv va filtrlash.
-- **Statistika va Tahlil:** Oylik taqqoslashlar, eng ko'p xarajat qilingan kun, kategoriyalar doiraviy grafigi (Donut chart).
-- **Budjet boshqaruvi:** Oylik xarajat limitini belgilash, 50%, 75%, 90% va 100% holatlarida ogohlantirishlar, 6 oylik budjet tarixi.
-- **Kategoriyalar boshqaruvi:** Maxsus kategoriyalar qo'shish, rang tanlash, o'chirishda bog'langan operatsiyalarni xavfsiz boshqa kategoriyaga ko'chirish.
-- **Xavfsiz Autentifikatsiya:** Supabase Auth, Row Level Security (RLS) qoidalari bilan har bir foydalanuvchi faqat o'z ma'lumotlarini ko'radi va boshqaradi.
-- **O'zbek tili va Milliy standart:** Barcha interfeys lotin alifbosidagi toza o'zbek tilida, valyuta `UZS` (so'm) formatida va vaqt mintaqasi `Asia/Tashkent`.
+Reference article:
+https://www.shopify.com/blog/11863377-30-beautiful-and-creative-ecommerce-website-designs
 
----
+IMPORTANT: Use Heyday Canning Co. as the primary visual design reference for the entire Personal Finance Tracker application.
 
-## Texnologiyalar
+Do not use the previous tomato-inspired design direction.
 
-- **Frontend:** Next.js 14 (App Router), TypeScript, React 18
-- **Styling:** Tailwind CSS, Radix UI Primitives, Lucide React
-- **Backend & Database:** Supabase (PostgreSQL, Supabase Auth SSR, RLS)
-- **Data Visualization:** Recharts
-- **Forms & Validation:** React Hook Form + Zod
+We want to translate the distinctive Heyday Canning Co. visual identity into a premium, modern, creative personal finance management platform.
 
----
+## 1. DESIGN PHILOSOPHY
 
-## O'rnatish va Ishga Tushirish
+Study the reference carefully before implementing the interface.
 
-### 1. Talablar
-- Node.js 18+ va npm
-- [Supabase](https://supabase.com) hisobi (bepul)
+Pay attention to:
 
-### 2. Kutubxonalarni o'rnatish
-```bash
-npm install
-```
+- Overall visual identity.
+- Color combinations.
+- Typography hierarchy.
+- Layout composition.
+- Whitespace and spacing.
+- Background treatments.
+- Card designs.
+- Button styling.
+- Visual contrast.
+- Small decorative details.
+- Brand consistency.
 
-### 3. Ma'lumotlar bazasini sozlash (Supabase)
-1. [supabase.com](https://supabase.com) ga kiring va yangi loyiha yarating.
-2. Chap menyudan **SQL Editor** bo'limiga o'ting.
-3. Loyihadagi `supabase/migrations/20240101000000_initial_schema.sql` fayli tarkibini nusxalab, SQL Editorga tashlang va **Run** tugmasini bosing.
-   *(Bu barcha jadvallar, RLS qoidalari, triggerlar va standart kategoriyalarni avtomatik yaratadi)*
+The objective is to capture the same creative, distinctive, playful, and carefully art-directed feeling.
 
-### 4. Muhit o'zgaruvchilarini sozlash
-Loyihadagi `.env.local.example` faylidan nusxa olib, `.env.local` faylini yarating:
-```bash
-cp .env.local.example .env.local
-```
-Supabase loyihangizdan (**Project Settings -> API**):
-- `Project URL` ni `NEXT_PUBLIC_SUPABASE_URL` ga
-- `anon public key` ni `NEXT_PUBLIC_SUPABASE_ANON_KEY` ga qo'ying.
+Do not simply copy the reference website. Adapt its design language to a financial management application.
 
-### 5. Dasturni ishga tushirish
-```bash
-npm run dev
-```
-Brauzerda `http://localhost:3000` manzilini oching.
+The result must look like a professionally designed digital product rather than a generic finance dashboard.
+
+## 2. VISUAL STYLE
+
+Follow the Heyday Canning Co. aesthetic:
+
+- Bold and expressive typography.
+- Warm and distinctive color combinations.
+- Retro-modern visual language.
+- Creative but structured layouts.
+- Strong visual hierarchy.
+- Interesting use of whitespace.
+- Carefully composed interface sections.
+- Distinctive buttons and interactive elements.
+- Consistent visual rhythm throughout the application.
+
+The interface should feel welcoming, memorable, modern, and premium.
+
+## 3. COLOR DIRECTION
+
+Do not use tomato-inspired colors or tomato illustrations.
+
+Extract and interpret the visual color direction from the Heyday Canning Co. reference.
+
+Create a cohesive color system inspired by the actual brand presentation.
+
+Use colors strategically:
+
+- Primary background colors.
+- Secondary background colors.
+- Main text colors.
+- Accent colors.
+- Interactive states.
+- Financial status indicators.
+- Chart colors.
+
+Maintain excellent readability and contrast.
+
+Do not randomly introduce colors that do not belong to the visual identity.
+
+## 4. TYPOGRAPHY
+
+Typography is one of the most important parts of this design.
+
+Use:
+
+- Bold expressive display typography for major headings.
+- Clean and highly readable sans-serif typography for body text.
+- Clear typography hierarchy.
+- Carefully controlled font sizes.
+- Consistent line heights.
+- Tabular numerals for financial values.
+
+Financial amounts must remain extremely readable.
+
+The visual typography should reflect the distinctive personality of Heyday Canning Co. while remaining appropriate for a financial application.
+
+## 5. DASHBOARD DESIGN
+
+The dashboard must feel visually distinctive.
+
+Avoid conventional SaaS dashboard layouts.
+
+Create a carefully art-directed composition for:
+
+- Monthly financial overview.
+- Total expenses.
+- Total income.
+- Remaining balance.
+- Monthly budget.
+- Spending charts.
+- Category breakdown.
+- Recent transactions.
+
+Use expressive section headings and distinctive card compositions.
+
+Financial information must remain the primary focus.
+
+## 6. COMPONENT DESIGN
+
+Design every component consistently:
+
+- Navigation sidebar.
+- Header.
+- Financial summary cards.
+- Transaction tables.
+- Forms.
+- Modals.
+- Buttons.
+- Dropdowns.
+- Charts.
+- Progress bars.
+- Empty states.
+- Notifications.
+- Confirmation dialogs.
+
+Avoid default-looking UI components.
+
+Customize the appearance of every component to match the design system.
+
+## 7. ICONS AND DECORATIVE ELEMENTS
+
+Strict restrictions:
+
+- No stickers.
+- No random emojis.
+- No tomato illustrations.
+- No food-related illustrations.
+- No unnecessary decorative graphics.
+- No excessive icons.
+
+Use Lucide React icons only when they provide actual functionality or improve navigation.
+
+Decorative details should be subtle, intentional, and consistent with the reference.
+
+## 8. MICRO-INTERACTIONS
+
+Pay attention to small details:
+
+- Elegant hover transitions.
+- Smooth modal animations.
+- Subtle button interactions.
+- Clear input focus states.
+- Animated chart transitions.
+- Smooth navigation transitions.
+- Consistent loading states.
+
+Animations should feel refined and purposeful, never distracting.
+
+## 9. RESPONSIVE EXPERIENCE
+
+Preserve the same visual identity across:
+
+- Desktop.
+- Laptop.
+- Tablet.
+- Mobile.
+
+Do not simply shrink the desktop interface.
+
+Redesign layouts intelligently for smaller screens while maintaining the brand identity.
+
+## 10. FINAL DESIGN REQUIREMENT
+
+The final application must have a strong and recognizable visual identity inspired by Heyday Canning Co.
+
+It should combine:
+
+- Heyday's creative visual personality.
+- A premium financial application experience.
+- Excellent data readability.
+- Intuitive navigation.
+- Professional interaction design.
+
+The application must not resemble a generic financial SaaS template.
+
+Every screen, component, spacing decision, color combination, and interaction must feel intentional.
+
+Treat the reference as the main creative direction, not as a loose suggestion.
+
+Before implementation, analyze the reference and establish a consistent design system. Then apply that system across the entire application.
+
+Keep all application content in Uzbek (Latin alphabet), with UZS as the default currency.
+
+All existing functionality, database architecture, authentication, transaction CRUD, monthly analytics, and budget management requirements must remain unchanged.
